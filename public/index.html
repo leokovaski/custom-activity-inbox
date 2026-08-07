@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novo App Inbox</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Novo App Inbox</h1>
+    <p class="subtitle">Envie uma mensagem de inbox no app para os contatos desta jornada.</p>
+
+    <div class="form-group">
+      <label for="title">Título <span class="required">*</span></label>
+      <input type="text" id="title" maxlength="100" placeholder="Ex.: Você tem uma novidade!" />
+    </div>
+
+    <div class="form-group">
+      <label for="message">Mensagem <span class="required">*</span></label>
+      <textarea id="message" rows="4" maxlength="500" placeholder="Escreva a mensagem que o cliente verá no inbox do app"></textarea>
+    </div>
+
+    <div class="info-box">
+      <strong>Jornada atual:</strong> <span id="journeyName">carregando…</span>
+    </div>
+
+    <div class="info-box">
+      <strong>Dados enviados automaticamente:</strong>
+      <ul>
+        <li><code>contactKey</code> — chave do contato na jornada</li>
+        <li><code>emailAddress</code> — e-mail padrão da jornada</li>
+        <li><code>journeyName</code> / <code>journeyId</code> — jornada em que o contato está</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Postmonger: comunicação entre o iframe e o Journey Builder (hospedado localmente) -->
+  <script src="js/postmonger.min.js"></script>
+  <script src="js/customActivity.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: custom-activity
+
+logging:
+  level:
+    com.inbox.activity: INFO
+
+---
+# Perfil "worker": sem servidor web — apenas o consumidor da fila
+spring:
+  config:
+    activate:
+      on-profile: worker
+  main:
+    web-application-type: none

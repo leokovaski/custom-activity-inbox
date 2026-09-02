@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actions do Personalization — diagnóstico, decisões e plano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F5F2; --ink:#1C2230; --steel:#5B6371; --line:#D6D9DE; --panel:#FFFFFF;
+    --red:#B5122E; --red-soft:#F6E3E6; --green:#1E6B4A; --green-soft:#E1EFE7;
+    --amber:#8A5A00; --amber-soft:#F7ECD3; --blue:#1F4E8C; --blue-soft:#E3EAF5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--ink);font-family:"IBM Plex Sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  .deck{position:relative;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;background:var(--paper);padding:48px 60px 44px;display:none;flex-direction:column}
+  .slide.active{display:flex}
+
+  .head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
+  .head h1{font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.1}
+  .head .ctx{font-size:12px;color:var(--steel);text-align:right;max-width:380px}
+  .part{font-size:11.5px;color:var(--steel);margin-bottom:6px}
+  .part b{color:var(--red);font-weight:600}
+
+  .body{flex:1;display:grid;gap:18px;min-height:0}
+  h2{font-size:13.5px;font-weight:600;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  p,li,td{font-size:12.5px;line-height:1.42}
+  ul{list-style:none}
+  li{padding-left:12px;position:relative;margin-bottom:4px}
+  li::before{content:"";position:absolute;left:0;top:.58em;width:5px;height:5px;background:var(--steel);border-radius:50%}
+  strong{font-weight:600}
+  .muted{color:var(--steel)}
+  .mono{font-family:"IBM Plex Mono",Consolas,monospace;font-size:11.5px;background:#ECEDEA;padding:1px 4px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);padding:12px 14px}
+  .panel h2{border:0;margin:0 0 6px;padding:0}
+  .panel.red{border-color:var(--red);background:var(--red-soft)}
+  .panel.green{border-color:var(--green);background:var(--green-soft)}
+  .panel.amber{border-color:var(--amber);background:var(--amber-soft)}
+  .panel.blue{border-color:var(--blue);background:var(--blue-soft)}
+  .panel.ink{border-color:var(--ink)}
+  .stack>*+*{margin-top:12px}
+
+  .verdict{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:2px;vertical-align:middle}
+  .verdict.no{background:var(--red);color:#fff}
+  .verdict.yes{background:var(--green);color:#fff}
+
+  .foot{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+  .foot .dec{font-size:12.5px;line-height:1.4}
+  .foot .dec b{color:var(--red);font-weight:600}
+  .foot .pg{font-size:12px;color:var(--steel);white-space:nowrap}
+
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-weight:600;padding:5px 8px;border-bottom:1px solid var(--ink);font-size:12px}
+  td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  td.k{color:var(--steel);width:24%}
+  .ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--amber)}
+
+  .numbers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
+  .num{background:var(--panel);border:1px solid var(--line);padding:10px 12px}
+  .num .v{font-size:34px;font-weight:600;line-height:1;color:var(--red);letter-spacing:-.02em}
+  .num .l{font-size:11.5px;color:var(--steel);margin-top:5px;line-height:1.3}
+
+  /* principles + timeline + kpis */
+  .principles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .principles div{border-left:3px solid var(--ink);padding:2px 0 2px 12px}
+  .principles b{display:block;font-size:13px;margin-bottom:2px}
+  .principles span{font-size:12px;color:var(--steel);line-height:1.35;display:block}
+  .timeline{position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;padding-top:24px}
+  .timeline::before{content:"";position:absolute;left:0;right:0;top:9px;height:2px;background:var(--ink)}
+  .horizon{position:relative}
+  .horizon::before{content:"";position:absolute;top:-20px;left:0;width:10px;height:10px;background:var(--ink);border-radius:50%;box-shadow:0 0 0 3px var(--paper)}
+  .horizon .when{font-size:12px;color:var(--steel);margin-bottom:2px}
+  .horizon .what{font-size:15px;font-weight:600;margin-bottom:8px}
+  .horizon li{font-size:12px}
+  .horizon .tag{font-size:11.5px;color:var(--red);font-weight:500;margin-top:6px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;border-top:1px solid var(--line);padding-top:12px}
+  .kpis .lbl{grid-column:1/-1;font-size:12px;font-weight:600;margin-bottom:-6px}
+  .kpis div{display:flex;align-items:baseline;gap:10px}
+  .kpis b{font-size:21px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+  .kpis span{font-size:11.5px;color:var(--steel);line-height:1.3}
+
+  .decs{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .decs .lbl{grid-column:1/-1;font-size:12px;font-weight:600;margin-bottom:-4px}
+  .decs div:not(.lbl){display:flex;gap:8px;align-items:flex-start;border-left:3px solid var(--red);padding:2px 0 2px 10px}
+  .decs b{font-size:18px;font-weight:600;color:var(--red);line-height:1}
+  .decs span{font-size:12px;line-height:1.35}
+
+  /* divider slide */
+  .divider{justify-content:center}
+  .divider .big{font-size:44px;font-weight:600;letter-spacing:-.015em;line-height:1.05;margin-bottom:8px}
+  .divider .sub{font-size:16px;color:var(--steel);margin-bottom:28px}
+  .agenda{display:grid;grid-template-columns:1fr 1fr;gap:6px 40px;max-width:900px}
+  .agenda div{font-size:14px;padding:6px 0;border-bottom:1px solid var(--line);display:flex;gap:14px}
+  .agenda div b{color:var(--steel);font-weight:500;min-width:26px}
+
+  /* flow diagram */
+  .flow{display:flex;align-items:flex-start;gap:0}
+  .node{background:var(--panel);border:1px solid var(--line);padding:8px 11px;flex:1;min-width:0}
+  .node b{display:block;font-size:12.5px;margin-bottom:3px}
+  .node span{font-size:11.5px;color:var(--steel);line-height:1.3;display:block}
+  .node.ghost{background:transparent;border-style:dashed;color:var(--steel)}
+  .node.ghost b{color:var(--steel)}
+  .node.hi{border-color:var(--green);background:var(--green-soft)}
+  .node.warnb{border-color:var(--red);background:var(--red-soft)}
+  .arrow{display:flex;align-items:center;justify-content:center;width:30px;flex:none;color:var(--steel);font-size:18px;align-self:center}
+  .lane{margin-bottom:0}
+  .lane .ttl{font-size:11.5px;color:var(--steel);margin-bottom:5px}
+  .split{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+  .split .node{flex:none}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+  .ex{font-size:12px;line-height:1.5}
+  .ex .bad::before{content:"✕ ";color:var(--red)}
+  .ex .ok::before{content:"✓ ";color:var(--green)}
+  .ex .bad,.ex .ok{color:var(--ink)}
+
+  .nav{position:fixed;bottom:14px;right:18px;display:flex;gap:6px;z-index:5}
+  .nav button{background:transparent;border:1px solid #6b7280;color:#cbd2dc;font:inherit;font-size:12px;padding:5px 10px;cursor:pointer}
+  .nav button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .hint{position:fixed;bottom:18px;left:18px;font-size:11px;color:#8a919c}
+  @media print{
+    html,body{background:#fff}
+    #stage{position:static;display:block}
+    .deck{transform:none!important;width:auto;height:auto}
+    .slide{position:relative;display:flex;width:1280px;height:720px;page-break-after:always}
+    .nav,.hint{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="stage"><div class="deck" id="deck">
+
+<!-- ============ EXEC 1 ============ -->
+<section class="slide active">
+  <div class="part"><b>Executivo</b> · 1 de 2</div>
+  <div class="head">
+    <h1>Actions do Personalization: o que encontramos e para onde vai cada coisa</h1>
+    <div class="ctx">Squad estruturante MCE / Personalization · setembro 2026</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr 1.15fr">
+    <div>
+      <h2>Situação</h2>
+      <ul>
+        <li>As actions do Personalization são definidas no código do sitemap. Por um período foram criadas sem critério, gerando centenas de duplicatas e sufixos de teste que confundem quem monta segmentos.</li>
+        <li>Para contornar, outra squad criou um <strong>painel externo</strong>: flag manual de "action ativa", classificação de negócio digitada à mão e um alerta de anomalia (queda de 50% na volumetria). Não tem dono. Modelos de propensão passaram a depender dele.</li>
+        <li>O Personalization já tem um <strong>catálogo nativo modelado</strong> com produto micro, macro e necessidade, e um Warehouse que expõe cliente × produto × evento. <strong>Nunca foi ligado ao sitemap.</strong></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Evidências</h2>
+      <div class="numbers">
+        <div class="num"><div class="v">1.153</div><div class="l">actions marcadas "inativas" no painel</div></div>
+        <div class="num"><div class="v">246</div><div class="l">delas em segmentos ativos (21%)</div></div>
+        <div class="num"><div class="v">~22</div><div class="l">segmentos com actions de teste</div></div>
+      </div>
+      <ul>
+        <li>As 246 só admitem duas leituras: a flag está errada, ou há campanhas rodando sobre actions que não disparam mais. Nos dois casos o painel falhou como guia.</li>
+        <li>Carrinho abandonado é montado à mão como "teve action A e não teve B", sem os eventos nativos de item.</li>
+        <li>Os modelos usam lista fixa de actions no código; a higienização em curso vai quebrá-la.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Cada capacidade do painel tem um destino melhor</h2>
+      <table>
+        <tr><th>O painel faz</th><th>Passa a ser feito por</th></tr>
+        <tr><td>Diz se a action está ativa</td><td><strong>Personalization</strong> (volumetria dos últimos 30 dias) e <strong>Confluence</strong> (se está documentada, está no código)</td></tr>
+        <tr><td>Relaciona action à tela</td><td><strong>Confluence</strong>, com o código de referência de match, mantido no fluxo de deploy</td></tr>
+        <tr><td>Classifica por produto e necessidade</td><td><strong>Catálogo nativo</strong>, mantido por produto/negócio, alimentado por eventos de item</td></tr>
+        <tr><td>Alerta queda de volumetria</td><td><strong>Observabilidade corporativa</strong>, sob a squad de Product Ops</td></tr>
+        <tr><td>Serve dados aos modelos</td><td><strong>Warehouse + catálogo</strong>; a base atual vira mapeamento legado congelado</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="foot">
+    <div class="dec"><b>Mensagem central:</b> nenhuma capacidade do painel precisa do painel. Cada uma tem um dono nativo ou corporativo.</div>
+    <div class="pg">1 / 13</div>
+  </div>
+</section>
+
+<!-- ============ EXEC 2 ============ -->
+<section class="slide">
+  <div class="part"><b>Executivo</b> · 2 de 2</div>
+  <div class="head">
+    <h1>Decisões e plano</h1>
+    <div class="ctx">Alinhado à convivência (~6 meses) e à migração (~1 ano) para o novo Personalization; não depende de outras squads</div>
+  </div>
+  <div class="body" style="grid-template-rows:auto 1fr auto">
+    <div class="decs">
+      <div class="lbl">Decisões solicitadas</div>
+      <div><b>1</b><span><strong>Descontinuar o painel</strong>, reaproveitando a base como mapeamento legado congelado</span></div>
+      <div><b>2</b><span><strong>Observabilidade de actions</strong> passa à solução corporativa da squad de Product Ops</span></div>
+      <div><b>3</b><span><strong>Ligar o catálogo nativo</strong> com eventos de item; piloto em crédito consignado</span></div>
+      <div><b>4</b><span><strong>Classificação de negócio</strong> é do catálogo, mantida por produto/negócio; fora do escopo da squad</span></div>
+      <div><b>5</b><span><strong>Taxonomia obrigatória</strong> em toda instrumentação, atual e do novo Personalization</span></div>
+    </div>
+    <div class="timeline">
+      <div class="horizon">
+        <div class="when">0 a 3 meses</div>
+        <div class="what">Contenção e piloto</div>
+        <ul>
+          <li>Cruzar as 246 com volumetria real; corrigir segmentos quebrados com a operação</li>
+          <li>Migrar os ~22 segmentos com actions de teste</li>
+          <li>Padrão de nomenclatura; PR do sitemap revisado pela squad; Confluence como Definition of Done</li>
+          <li>Congelar a base do painel; iniciar handover do alerta de anomalia a Product Ops</li>
+          <li>Auditar catálogo e Purchases existentes</li>
+          <li><strong>Piloto consignado</strong>: eventos de item → Warehouse → segmento nativo → feature de modelo</li>
+        </ul>
+        <div class="tag">Meta: zero segmentos ativos sobre action sem volume</div>
+      </div>
+      <div class="horizon">
+        <div class="when">3 a 6 meses · antes da convivência</div>
+        <div class="what">Generalização e higienização</div>
+        <ul>
+          <li>Desligar o painel, após o alerta de anomalia estar na observabilidade corporativa</li>
+          <li>Eventos de item nas demais jornadas transacionais; desligar segmentos "A e não B" um a um</li>
+          <li>Depreciar actions sem volume há 90 dias e sem uso</li>
+          <li>Especificação por jornada: qual tela dispara qual evento de item, com qual produto micro</li>
+          <li>Validar com a Salesforce a paridade de catálogo e abandono no novo Personalization</li>
+        </ul>
+        <div class="tag">Riscos: telas compartilhadas por vários produtos; lead time de produto e de Product Ops</div>
+      </div>
+      <div class="horizon">
+        <div class="when">6 a 12+ meses</div>
+        <div class="what">Convivência e migração</div>
+        <ul>
+          <li>Novo Personalization instrumentado desde o primeiro dia com a taxonomia e a modelagem de item já testadas</li>
+          <li>Observabilidade corporativa cobrindo actions e eventos de item nos dois ambientes</li>
+          <li>Modelos consomem só Warehouse + catálogo; mapeamento legado é desligado</li>
+          <li>Descomissionamento progressivo do sitemap legado</li>
+        </ul>
+        <div class="tag">Migração completa estimada em ~1 ano</div>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="lbl">Indicadores</div>
+      <div><b>0</b><span>actions fora do padrão de nomenclatura</span></div>
+      <div><b>0</b><span>segmentos ativos sobre action sem volume (hoje: 246)</span></div>
+      <div><b>jornadas</b><span>com eventos de item vs. total transacional</span></div>
+      <div><b>100%</b><span>das actions em uso com alerta de queda na observabilidade corporativa</span></div>
+    </div>
+  </div>
+  <div class="foot">
+    <div class="dec"><b>Primeira entrega:</b> cruzamento das 246 e piloto em consignado, em paralelo.</div>
+    <div class="pg">2 / 13</div>
+  </div>
+</section>
+
+<!-- ============ DIVIDER ============ -->
+<section class="slide divider">
+  <div class="part"><b>Detalhamento</b> · operação e modelos</div>
+  <div class="big">O que muda na prática</div>
+  <div class="sub">Como funciona hoje, para onde vamos, e o que cada time passa a fazer diferente</div>
+  <div class="agenda">
+    <div><b>4</b>Como funciona hoje</div>
+    <div><b>9</b>Operação: como consultar e construir segmentos</div>
+    <div><b>5</b>O painel de catálogo</div>
+    <div><b>10</b>Modelos: o que muda no consumo</div>
+    <div><b>6</b>Modelo alvo</div>
+    <div><b>11</b>Modelos: transição da base do painel</div>
+    <div><b>7</b>Taxonomia e nomenclatura</div>
+    <div><b>12</b>Responsabilidades</div>
+    <div><b>8</b>Carrinho abandonado</div>
+    <div><b>13</b>Verificações pendentes e próximos passos</div>
+  </div>
+  <div class="principles" style="margin-top:32px;max-width:1160px">
+    <div><b>Código é a fonte de verdade</b><span>Uma action existe se está no sitemap. Nada que a descreva vive fora do repositório ou do que é gerado dele.</span></div>
+    <div><b>Catálogo é a fonte da semântica</b><span>Produto micro, macro e necessidade vivem no catálogo nativo, mantido por produto/negócio.</span></div>
+    <div><b>Propriedade única</b><span>A squad instrumenta. Produto define semântica. Operação ativa. Modelos consomem. Product Ops observa.</span></div>
+    <div><b>Sem cadastro paralelo</b><span>Se não é gerado do código ou do catálogo, não é catálogo.</span></div>
+  </div>
+  <div class="foot" style="margin-top:28px"><div class="dec muted">Para a audiência executiva, os slides 1 e 2 bastam. Estes são material de apoio.</div><div class="pg">3 / 13</div></div>
+</section>
+
+<!-- ============ 4 HOJE ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · como funciona hoje</div>
+  <div class="head">
+    <h1>Como funciona hoje</h1>
+    <div class="ctx">Dois caminhos paralelos para a mesma informação, e um caminho nativo que nunca foi ligado</div>
+  </div>
+  <div class="body" style="grid-template-rows:auto auto auto 1fr;gap:12px">
+    <div class="lane">
+      <div class="ttl">Caminho 1 · instrumentação</div>
+      <div class="flow">
+        <div class="node"><b>App (webview)</b><span>Web SDK injetado; sitemap define regras de match por URL/pageType</span></div>
+        <div class="arrow">→</div>
+        <div class="node warnb"><b>Actions</b><span>Só nome + volumetria. Sem status, sem tela, sem produto. Centenas com sufixo de teste</span></div>
+        <div class="arrow">→</div>
+        <div class="split">
+          <div class="node"><b>UI do Personalization</b><span>Segmentos de abandono montados como "teve A e não teve B"</span></div>
+          <div class="node"><b>Databricks</b><span>Tabela nativa: action × cliente × hits</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="ttl">Caminho 2 · o painel externo</div>
+      <div class="flow">
+        <div class="node warnb"><b>Painel (outra squad)</b><span>Flag "ativa" e produto macro/micro, necessidade, etapa digitados à mão, action por action</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Base do painel</b><span>Conectada ao Databricks</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Modelos de propensão</b><span>Join com a tabela nativa pelo nome da action + lista fixa de actions no código</span></div>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="ttl">Caminho nativo · existe, nunca foi usado</div>
+      <div class="flow">
+        <div class="node ghost"><b>Eventos de item</b><span>View Item, Add to Cart, Purchase. O sitemap só dispara actions; Purchase em poucas jornadas</span></div>
+        <div class="arrow">→</div>
+        <div class="node ghost"><b>Catálogo</b><span>Objetos de produto micro, produto macro e necessidade já modelados</span></div>
+        <div class="arrow">→</div>
+        <div class="node ghost"><b>Warehouse</b><span>Cliente × produto × evento, com as dimensões do catálogo</span></div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="panel red"><h2>O que está errado</h2><ul>
+        <li>O painel replica fora o que o catálogo faz dentro, e replica à mão o que o código já sabe (se a action existe)</li>
+        <li>246 actions "inativas" seguem em segmentos ativos: a flag manual não reflete a realidade</li>
+        <li>Lista fixa de actions nos modelos quebra a cada renomeação, em silêncio</li>
+      </ul></div>
+      <div class="panel green"><h2>O que já temos e não custa nada novo</h2><ul>
+        <li>Catálogo modelado com a mesma taxonomia que o painel tenta manter</li>
+        <li>Warehouse que já expõe cliente × produto × evento para o Databricks</li>
+        <li>Confluence com cada action e seu código de referência de match</li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">Diagnóstico em uma frase: a semântica que falta nas actions já existe no catálogo; falta o sitemap alimentá-lo.</div><div class="pg">4 / 13</div></div>
+</section>
+
+<!-- ============ 5 PAINEL ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · o painel de catálogo</div>
+  <div class="head">
+    <h1>O painel de catálogo de actions</h1>
+    <div class="ctx">O que é, o que tentou resolver, por que não funciona e o que já substitui</div>
+  </div>
+  <div class="body" style="grid-template-columns:290px 1fr 380px">
+    <div class="stack">
+      <div><h2>O que é</h2><p>Aplicação externa criada por outra squad para catalogar as actions: flag manual de "action ativa", campos de negócio (produto macro/micro, necessidade, etapa) preenchidos à mão e um alerta de anomalia quando a volumetria de uma action cai 50%.</p></div>
+      <div><h2>O que tentou resolver</h2><ul>
+        <li>Operação não sabia qual action estava ativa</li>
+        <li>Operação não sabia qual tela dispara qual action</li>
+        <li>Lacuna nativa: a lista de actions só mostra nome e volumetria</li>
+      </ul></div>
+      <div><h2>Quem sustenta</h2><p>Ninguém. Squad de origem tem outra missão; sem roadmap nem SLA. A classificação dependia de uma pessoa. A squad estruturante não tem mandato para manter uma aplicação paralela ao produto.</p></div>
+    </div>
+    <div class="stack">
+      <div><h2>Problemas</h2>
+        <div class="numbers">
+          <div class="num"><div class="v">1.153</div><div class="l">actions marcadas como inativas</div></div>
+          <div class="num"><div class="v">246</div><div class="l">delas em segmentos ativos (21%)</div></div>
+          <div class="num"><div class="v">~22</div><div class="l">segmentos com actions de teste</div></div>
+        </div>
+        <ul>
+          <li>Não sincroniza com o código: qualquer deploy sem atualização manual o torna incorreto</li>
+          <li>Emula à mão dois conceitos que já existem: existência (código) e classificação (catálogo)</li>
+          <li>Modelos passaram a depender de um sistema sem dono</li>
+        </ul>
+      </div>
+      <div class="panel red"><h2>Manter ou não manter <span class="verdict no">Descontinuar</span></h2>
+        <p>Congelar escrita agora → publicar o cruzamento das 246 e corrigir segmentos com a operação → base congelada vira mapeamento legado (slide 11) → alerta de anomalia entregue a Product Ops → desligar a aplicação.</p></div>
+    </div>
+    <div>
+      <h2>Alternativas que já resolvem</h2>
+      <table>
+        <tr><th>Necessidade</th><th>Fonte de verdade</th></tr>
+        <tr><td class="k">Action está ativa?</td><td><strong>Personalization</strong>, que já é o catálogo de actions: "teve hits nos últimos 30 dias". Se está no Confluence, está instrumentada.</td></tr>
+        <tr><td class="k">Qual tela dispara?</td><td><strong>Confluence</strong>: action + código de referência de match. A regra identifica a tela e sobrevive a mudanças de layout, que não são da squad.</td></tr>
+        <tr><td class="k">Qual action usar?</td><td><strong>Taxonomia no nome</strong> torna a lista nativa navegável por produto (slide 7).</td></tr>
+        <tr><td class="k">Produto, necessidade</td><td><strong>Catálogo nativo</strong>, via eventos de item (slides 6 e 8).</td></tr>
+        <tr><td class="k">Action caiu?</td><td><strong>Observabilidade corporativa</strong> (Product Ops). O painel só desliga depois desse handover.</td></tr>
+      </table>
+      <div class="panel green" style="margin-top:10px"><p><strong>Confluence entra no fluxo de deploy.</strong> Nenhum PR de sitemap fecha sem a entrada correspondente.</p></div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec"><b>Decisão:</b> descontinuação controlada, reaproveitando a base como mapeamento legado congelado.</div><div class="pg">5 / 13</div></div>
+</section>
+
+<!-- ============ 6 MODELO ALVO ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · modelo alvo</div>
+  <div class="head">
+    <h1>Modelo alvo</h1>
+    <div class="ctx">Actions identificam a tela; eventos de item carregam o produto; o catálogo resolve o resto</div>
+  </div>
+  <div class="body" style="grid-template-rows:auto auto auto;align-content:start">
+    <div class="lane">
+      <div class="ttl">Instrumentação via sitemap</div>
+      <div class="flow">
+        <div class="node"><b>App (webview)</b><span>Cada tela pertence a um produto; o produto micro fica fixo na regra do sitemap</span></div>
+        <div class="arrow">→</div>
+        <div class="split">
+          <div class="node"><b>Action</b><span>Identifica a tela. Nome no padrão <span class="mono">Canal - Produto Micro - Etapa</span></span></div>
+          <div class="node hi"><b>Evento de item</b><span>View Item / Add to Cart / Purchase, com item = produto micro</span></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node hi"><b>Catálogo</b><span>Resolve produto macro, necessidade e demais dimensões a partir do produto micro</span></div>
+        <div class="arrow">→</div>
+        <div class="split">
+          <div class="node"><b>Segmentos nativos</b><span>"Tem item no carrinho sem compra", por produto ou por dimensão</span></div>
+          <div class="node"><b>Warehouse → Databricks</b><span>Cliente × item × evento × data, já com dimensões</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="three">
+      <div class="panel"><h2>Actions passam a servir para</h2><ul>
+        <li>Identificar a tela ou conteúdo visitado</li>
+        <li>Telas sem produto (navegação, informativas)</li>
+        <li>Continuar populando a tabela nativa de volumetria</li>
+      </ul></div>
+      <div class="panel green"><h2>Eventos de item passam a servir para</h2><ul>
+        <li>Funil transacional: viu / iniciou / confirmou por produto</li>
+        <li>Carrinho abandonado nativo</li>
+        <li>Features de modelo com produto, macro e necessidade sem mapeamento manual</li>
+      </ul></div>
+      <div class="panel"><h2>O que deixa de existir</h2><ul>
+        <li>Classificação digitada por action</li>
+        <li>Segmentos "teve A e não teve B" para abandono</li>
+        <li>Lista fixa de actions no código dos modelos</li>
+      </ul></div>
+    </div>
+    <div class="panel amber"><p><strong>Convivência inevitável.</strong> Eventos de item só têm dado a partir da instrumentação. Até lá, e para histórico, o mapeamento legado action → produto micro (base do painel congelada) faz a ponte. Ele é transitório e tem data para sair.</p></div>
+  </div>
+  <div class="foot"><div class="dec">Uma tela pode disparar action e evento de item ao mesmo tempo: a action diz onde o cliente estava, o evento diz o que ele fez com qual produto.</div><div class="pg">6 / 13</div></div>
+</section>
+
+<!-- ============ 7 TAXONOMIA ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · taxonomia e nomenclatura</div>
+  <div class="head">
+    <h1>Taxonomia e nomenclatura de actions</h1>
+    <div class="ctx">O nome carrega o que identifica a tela; o catálogo carrega o que classifica o produto</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr">
+    <div class="stack">
+      <div class="panel ink">
+        <h2>Padrão</h2>
+        <p style="font-size:18px;font-weight:600;margin:4px 0 6px">Canal - Produto Micro - Etapa</p>
+        <p>Produto macro e necessidade <strong>não</strong> entram no nome: são resolvidos pelo catálogo a partir do produto micro. Duas fontes para o mesmo dado é o erro que criou o painel. O macro pode aparecer como prefixo de navegação, mas é renderização, não origem.</p>
+      </div>
+      <div>
+        <h2>Etapa: vocabulário fechado, alinhado aos eventos de item</h2>
+        <table>
+          <tr><th>Etapa</th><th>Significado</th><th>Evento de item correspondente</th></tr>
+          <tr><td>Home</td><td>Entrada do produto/serviço</td><td>—</td></tr>
+          <tr><td>Conhecimento</td><td>Tela informativa do produto</td><td>View Item</td></tr>
+          <tr><td>Simular / Iniciar</td><td>Cliente começou a jornada</td><td>Add to Cart</td></tr>
+          <tr><td>Confirmar</td><td>Tela de confirmação</td><td>—</td></tr>
+          <tr><td>Concluído</td><td>Contratação efetivada</td><td>Purchase</td></tr>
+        </table>
+        <p class="muted" style="margin-top:6px">A lista final é decidida com produto. O que importa é ser fechada e ter o mesmo vocabulário dos eventos de item.</p>
+      </div>
+    </div>
+    <div class="stack">
+      <div>
+        <h2>Exemplos</h2>
+        <div class="ex">
+          <p class="ok">Mobile Banking - Pix - Home</p>
+          <p class="ok">Mobile Banking - Credito Consignado - Simular</p>
+          <p class="bad">Mobile Banking - Confirmar Pix - Pix Nova URL 1</p>
+          <p class="bad">Mobile Banking - Conhecimento de Emprestimo - Credito Consignado - INSS (novo)(novo)</p>
+          <p class="bad">Mobile Banking - Cartões - Cartao Adicional - Confirmar solicitação - DL_GA4</p>
+        </div>
+        <p class="muted" style="margin-top:6px">Sufixos de versão, de teste ou de origem técnica (URL 1, novo, DL, GA4) nunca entram no nome. Versão é assunto do código, não da action.</p>
+      </div>
+      <div>
+        <h2>Regras de governança</h2>
+        <ul>
+          <li>Action nova só entra por PR do sitemap revisado pela squad; nome fora do padrão é bloqueio. Evento de item só entra com o produto micro já existente no catálogo</li>
+          <li>Entrada no Confluence (action + código de match) é Definition of Done do PR</li>
+          <li>Renomear ou unificar gera linha no changelog com <span class="mono">substituida_por</span></li>
+          <li>Action sem volume há 90 dias e sem uso em segmento é depreciada e removida do sitemap</li>
+          <li>Nome de tela no GA4 segue a mesma taxonomia, para que as fontes sejam comparáveis</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">A taxonomia é decisão de curto prazo porque toda instrumentação nova, inclusive a do novo Personalization, vai herdá-la.</div><div class="pg">7 / 13</div></div>
+</section>
+
+<!-- ============ 8 CARRINHO ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · carrinho abandonado</div>
+  <div class="head">
+    <h1>Carrinho abandonado: de pares de actions para eventos de item</h1>
+    <div class="ctx">O produto já sabe fazer isso; hoje reconstruímos à mão</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr">
+    <div class="stack">
+      <div>
+        <h2>Hoje vs. alvo</h2>
+        <table>
+          <tr><th></th><th>Hoje: "teve A e não teve B"</th><th>Alvo: eventos de item</th></tr>
+          <tr><td class="k">Lógica</td><td>Um segmento artesanal por combinação de actions</td><td class="ok">Uma lógica reutilizável: item no carrinho sem compra</td></tr>
+          <tr><td class="k">Estado</td><td>Histórico com janela de lookback; falso positivo se concluiu por outro canal</td><td class="ok">Estado atual do carrinho; Purchase limpa</td></tr>
+          <tr><td class="k">Produto</td><td>Implícito no nome da action</td><td class="ok">Item do catálogo, com macro e necessidade</td></tr>
+          <tr><td class="k">Quem monta</td><td>Operação precisa saber os nomes exatos de duas actions</td><td class="ok">Operação escolhe produto ou dimensão</td></tr>
+          <tr><td class="k">Extras</td><td>Nada</td><td class="ok">Triggers, recomendações, atributos de perfil</td></tr>
+        </table>
+      </div>
+      <div class="panel amber"><h2>Cuidados</h2><ul>
+        <li><strong>Expiração do carrinho.</strong> Purchase limpa; desistência não. Sem regra, quem abandonou de vez fica "no carrinho" para sempre. Definir limpeza em cancelamento explícito e janela do segmento.</li>
+        <li><strong>Nem toda jornada é aquisição.</strong> Pix é transação; se "Pix abandonado" é caso de marketing, produto decide.</li>
+        <li><strong>Telas informativas continuam como actions.</strong> Catálogo é para jornadas transacionais.</li>
+      </ul></div>
+    </div>
+    <div class="stack">
+      <div>
+        <h2>Decisões por jornada (com as áreas de produto)</h2>
+        <ul>
+          <li>Qual tela dispara <strong>View Item</strong>, qual dispara <strong>Add to Cart</strong>, qual dispara <strong>Purchase</strong></li>
+          <li>Qual é o <strong>item</strong>: o produto micro do catálogo, com ID estável</li>
+          <li><strong>Produto micro fixo na regra da tela</strong>, como o nome da action hoje. Exceção: telas compartilhadas por vários produtos precisam de um sinal na página para distinguir</li>
+          <li>Regra de <strong>expiração</strong> e limpeza do carrinho</li>
+        </ul>
+      </div>
+      <div class="panel green">
+        <h2>Piloto: crédito consignado</h2>
+        <ul>
+          <li>Funil claro, valor alto, "Purchase" inequívoco; Purchases existentes são auditados primeiro</li>
+          <li>Sitemap dispara os três eventos com item = produto micro</li>
+          <li>Warehouse mostra cliente × produto × evento com macro e necessidade</li>
+          <li>Um segmento nativo de abandono substitui o segmento "A e não B" da jornada</li>
+          <li>Uma feature de modelo lê o Warehouse em vez de actions</li>
+        </ul>
+        <p style="margin-top:6px"><strong>Critério de sucesso:</strong> a jornada medida por actions e por eventos de item dá volumetria compatível, e o segmento nativo dispara a mesma campanha.</p>
+      </div>
+      <p class="muted">Generalização jornada a jornada; os segmentos "A e não B" são desligados um por vez, nunca de uma só vez.</p>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">Antes de instrumentar em escala: confirmar com a Salesforce como catálogo e abandono nativo se traduzem no novo Personalization.</div><div class="pg">8 / 13</div></div>
+</section>
+
+<!-- ============ 9 OPERAÇÃO ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · operação</div>
+  <div class="head">
+    <h1>Operação: como consultar e como construir segmentos</h1>
+    <div class="ctx">O que muda no dia a dia de quem monta segmentos e campanhas</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr 1fr">
+    <div>
+      <h2>Para saber se uma action está ativa</h2>
+      <ul>
+        <li>Lista de actions do Personalization: <strong>hits nos últimos 30 dias</strong>. Sem volume = não usar.</li>
+        <li>Está no Confluence? Então está instrumentada. Não está? Não existe mais, mesmo que apareça na lista.</li>
+        <li>A flag do painel <strong>não deve mais ser consultada</strong>: 246 actions marcadas como inativas estão em uso.</li>
+        <li>Queda brusca de volumetria: alerta na observabilidade corporativa (Product Ops), não no painel.</li>
+      </ul>
+      <h2 style="margin-top:14px">Para saber qual tela dispara</h2>
+      <ul>
+        <li>Confluence: cada action com seu código de referência de match (pageType / regra).</li>
+        <li>Não haverá print de tela: o produto muda o layout o tempo todo; a regra de match é o que identifica a tela de forma estável.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Para escolher a action certa</h2>
+      <ul>
+        <li>Navegar pelo nome: <span class="mono">Canal - Produto Micro - Etapa</span>. Filtrar pelo produto e escolher a etapa.</li>
+        <li>Actions com sufixo (URL 1, novo, DL, teste) estão sendo unificadas; se ainda aparecerem, usar a versão sem sufixo e avisar a squad.</li>
+        <li>Precisa de uma action que não existe? Pedido para a squad com produto micro e etapa. Sem produto micro, o pedido volta.</li>
+      </ul>
+      <h2 style="margin-top:14px">Para carrinho abandonado</h2>
+      <ul>
+        <li>Enquanto a jornada não tem eventos de item: continua "teve A e não teve B", usando actions por Etapa (Simular sem Concluído).</li>
+        <li>Jornada com eventos de item (a partir do piloto em consignado): segmento nativo "item no carrinho sem compra", escolhendo o produto ou a dimensão.</li>
+      </ul>
+    </div>
+    <div class="stack">
+      <div class="panel red"><h2>O que sai do dia a dia</h2><ul>
+        <li>Consultar o painel</li>
+        <li>Criar segmento sobre action com sufixo</li>
+        <li>Pedir action nova "para testar" sem passar pela squad</li>
+      </ul></div>
+      <div class="panel green"><h2>O que entra</h2><ul>
+        <li>Consultar Confluence + lista nativa</li>
+        <li>Receber changelog de renomeações e migrar segmentos afetados</li>
+        <li>Participar da definição de Etapa e dos gatilhos de item por jornada</li>
+      </ul></div>
+      <div class="panel amber"><p><strong>Curto prazo:</strong> a squad vai publicar a lista dos segmentos que referenciam actions sem volume. A correção é conjunta, e o objetivo é diagnóstico, não auditoria.</p></div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">Regra de bolso: sem volume nos últimos 30 dias, não use; sem entrada no Confluence, não existe.</div><div class="pg">9 / 13</div></div>
+</section>
+
+<!-- ============ 10 MODELOS: CONSUMO ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · modelos de propensão</div>
+  <div class="head">
+    <h1>Modelos: o que muda no consumo</h1>
+    <div class="ctx">Do join com a base do painel para o Warehouse com catálogo</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr">
+    <div class="panel amber" style="grid-column:1/-1"><h2>Alerta: lista de actions fixada no código do modelo</h2>
+      <p>As actions mudam o tempo todo (unificação, renomeação, depreciação) e o modelo não acompanha. Feature que aponta para action morta fica zerada em silêncio: o modelo degrada sem gerar erro. A higienização em curso vai renomear actions; sem consumo dinâmico, o modelo quebra na primeira leva. Trocar a lista fixa pela base viva do painel não resolve: é classificação manual, sem SLA, num sistema que será desligado.</p></div>
+    <div>
+      <h2>Antes e depois</h2>
+      <table>
+        <tr><th></th><th>Hoje</th><th>Alvo</th></tr>
+        <tr><td class="k">Comportamento</td><td>Tabela nativa: action × cliente × hits</td><td class="ok">Warehouse: cliente × item × evento (view / add / purchase) × data</td></tr>
+        <tr><td class="k">Significado</td><td>Base do painel: macro, micro, necessidade digitados por action</td><td class="ok">Dimensões do catálogo, mantidas por produto/negócio</td></tr>
+        <tr><td class="k">Chave do join</td><td>Nome da action</td><td class="ok">ID do produto micro</td></tr>
+        <tr><td class="k">Seleção de features</td><td>Lista fixa no código</td><td class="ok">Por produto/etapa, dinâmica</td></tr>
+        <tr><td class="k">Telas sem produto</td><td>Actions</td><td>Actions, com nome no padrão</td></tr>
+      </table>
+    </div>
+    <div class="stack">
+      <div class="panel green"><h2>Recomendação de fontes</h2><ul>
+        <li><strong>Personalization (Warehouse + catálogo)</strong> como fonte principal de comportamento transacional com produto: identificado, com semântica, e é o mesmo dado que ativa campanhas.</li>
+        <li><strong>GA4 (via export, não a UI)</strong> como complemento de cobertura: nem todo cliente está no Personalization, e eventos de item só cobrem jornadas instrumentadas. Exige user_id configurado e a mesma taxonomia de tela.</li>
+        <li>Eventos de item resolvem o problema de <em>significado</em> do dado, não o de <em>quem está</em> no dado.</li>
+      </ul></div>
+      <div class="panel ink"><p><strong>Dados adicionais não são responsabilidade da squad.</strong> A squad é dona da instrumentação: nome, match, existência, volumetria, evento de item. A semântica de produto (macro, micro, necessidade) vive no catálogo e é de produto/negócio. Qualquer agrupamento extra para modelagem é de-para do próprio time de modelos, com chave em produto micro, nunca por action.</p></div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">A feature deixa de ser "quantos hits na action X" e passa a ser "quantos View Item / Add to Cart do produto Y na necessidade Z".</div><div class="pg">10 / 13</div></div>
+</section>
+
+<!-- ============ 11 MODELOS: TRANSIÇÃO ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · modelos de propensão</div>
+  <div class="head">
+    <h1>Modelos: transição usando a base do painel</h1>
+    <div class="ctx">Não se cria nada do zero; a base existente vira um mapeamento legado congelado</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr">
+    <div class="stack">
+      <div>
+        <h2>Três mudanças, nenhuma delas grande</h2>
+        <table>
+          <tr><th>Mudança</th><th>Por quê</th></tr>
+          <tr><td><strong>Vira snapshot.</strong> A aplicação do painel para de escrever; os modelos leem uma cópia estática no Databricks, com data de corte, de propriedade da squad.</td><td>Se a base continuar viva, o painel não foi desligado, só perdeu a interface.</td></tr>
+          <tr><td><strong>Encolhe.</strong> A coluna útil é <span class="mono">action → produto_micro</span>. Macro e necessidade ficam na transição, mas passam a vir do catálogo. A coluna "ativa" é <strong>descartada</strong>.</td><td>A flag está errada (246 casos). O critério certo é volumetria recente, que já está na tabela nativa.</td></tr>
+          <tr><td><strong>Ganha um fim.</strong> Colunas <span class="mono">substituida_por</span> e <span class="mono">data_depreciacao</span>. Actions novas no padrão não entram: o produto micro está no nome.</td><td>Conforme os eventos de item populam o Warehouse, a tabela deixa de ser consultada e sobra só para reconstruir histórico.</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="panel green"><h2>Para o time de modelos, a mudança imediata é mínima</h2><ul>
+        <li>Mesmo schema de join, mesma chave (nome da action)</li>
+        <li>Trocar o apontamento para a cópia congelada</li>
+        <li>Parar de ler a coluna "ativa"; usar hits recentes da tabela nativa</li>
+        <li>Substituir a lista fixa no código por leitura da tabela filtrando por produto/etapa</li>
+      </ul></div>
+      <div class="panel"><h2>Uso do mapeamento legado para histórico</h2>
+        <p>Eventos de item só têm dado a partir da instrumentação. Para treinar com histórico, a volumetria de actions legadas é traduzida em pseudo-eventos de item via <span class="mono">action → produto_micro</span> + Etapa do nome. Após alguns meses de dado nativo, o histórico reconstruído é aposentado.</p></div>
+      <div class="panel amber"><p><strong>Changelog</strong> publicado pela squad a cada renomeação, unificação ou depreciação, com janela de transição em que nome antigo e novo coexistem. É o que impede a quebra silenciosa que a lista fixa provoca hoje.</p></div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">Resumo: a base do painel é reaproveitada como mapeamento legado, congelada em data definida, e substituída progressivamente pelo catálogo via eventos de item.</div><div class="pg">11 / 13</div></div>
+</section>
+
+<!-- ============ 12 RESPONSABILIDADES ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · responsabilidades</div>
+  <div class="head">
+    <h1>Responsabilidades</h1>
+    <div class="ctx">Uma única dona por informação; nenhuma informação com duas donas</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr">
+    <div>
+      <table>
+        <tr><th>Informação ou atividade</th><th>Dono</th><th>Onde vive</th></tr>
+        <tr><td>Existência da action, nome, regra de match</td><td>Squad estruturante</td><td>Sitemap (repositório)</td></tr>
+        <tr><td>Documentação de action e match</td><td>Squad estruturante</td><td>Confluence, como DoD do PR</td></tr>
+        <tr><td>Evento de item por tela (view / add / purchase) e mapeamento tela → produto micro</td><td>Squad estruturante, com a classificação dada por produto</td><td>Sitemap</td></tr>
+        <tr><td>Produto micro, macro, necessidade e demais dimensões</td><td>Produto / negócio</td><td>Catálogo nativo</td></tr>
+        <tr><td>Etapa da jornada (vocabulário) e gatilhos por jornada</td><td>Produto, com squad e operação</td><td>Taxonomia + catálogo</td></tr>
+        <tr><td>Segmentos e campanhas</td><td>Operação</td><td>Personalization</td></tr>
+        <tr><td>Agrupamentos extras para modelagem</td><td>Time de modelos</td><td>De-para próprio, chave = produto micro</td></tr>
+        <tr><td>Alerta de queda de volumetria de actions e eventos</td><td>Squad de Product Ops</td><td>Observabilidade corporativa</td></tr>
+        <tr><td>Mapeamento legado action → produto micro e changelog</td><td>Squad estruturante (transitório)</td><td>Databricks</td></tr>
+      </table>
+    </div>
+    <div class="stack">
+      <div class="panel ink"><h2>A squad estruturante é dona de</h2><ul>
+        <li>Instrumentação: o que dispara, com que nome, com qual item</li>
+        <li>Qualidade do dado que sai: padrão, changelog, depreciação</li>
+        <li>Integração com o novo Personalization</li>
+      </ul></div>
+      <div class="panel red"><h2>A squad estruturante não é dona de</h2><ul>
+        <li>Classificar actions por produto, necessidade ou etapa</li>
+        <li>Manter aplicação ou base paralela ao produto</li>
+        <li>Definir a jornada do produto ou manter print de tela</li>
+        <li>Decidir semântica de negócio (o que é "iniciou" um consignado)</li>
+      </ul></div>
+      <div class="panel"><p><strong>Teste rápido para qualquer pedido novo:</strong> "isso é sobre o que dispara ou sobre o que significa?" O primeiro é da squad. O segundo é de produto.</p></div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">O catálogo tira da squad a classificação e da operação a adivinhação, e devolve as duas para quem tem a informação.</div><div class="pg">12 / 13</div></div>
+</section>
+
+<!-- ============ 13 PENDÊNCIAS ============ -->
+<section class="slide">
+  <div class="part"><b>Detalhamento</b> · próximos passos</div>
+  <div class="head">
+    <h1>Verificações pendentes e próximos passos</h1>
+    <div class="ctx">O que precisa ser confirmado antes de escalar, e quem faz</div>
+  </div>
+  <div class="body" style="grid-template-columns:1fr 1fr">
+    <div>
+      <h2>Verificações</h2>
+      <table>
+        <tr><th>O quê</th><th>Por que importa</th><th>Quem</th></tr>
+        <tr><td>Catálogo: itens populados, atualidade, forma de manutenção (UI ou feed)</td><td>Objeto vazio ou congelado é outro painel</td><td>Squad + produto</td></tr>
+        <tr><td>Catálogo × painel: as classificações batem?</td><td>Se divergem, produto decide qual é a verdade</td><td>Produto</td></tr>
+        <tr><td>Tipo de item de produto micro (Product ou customizado)</td><td>Semântica de carrinho/compra depende disso</td><td>Squad</td></tr>
+        <tr><td>Purchases que já disparam: apontam para o catálogo?</td><td>Se sim, o mapeamento de ID já existe</td><td>Squad</td></tr>
+        <tr><td>Quais telas atendem mais de um produto pela mesma URL</td><td>Só nelas o produto precisa vir da página; nas demais fica fixo na regra</td><td>Squad + canal</td></tr>
+        <tr><td>Paridade de catálogo e abandono no novo Personalization</td><td>Evita investir no que não migra</td><td>Squad + Salesforce</td></tr>
+        <tr><td>GA4: user_id configurado e export ativo</td><td>Condição para o uso complementar nos modelos</td><td>Modelos + analytics</td></tr>
+        <tr><td>Product Ops: capacidade e prazo para absorver o alerta de queda de volumetria</td><td>Condiciona a data de desligamento do painel</td><td>Squad + Product Ops</td></tr>
+      </table>
+    </div>
+    <div class="stack">
+      <div class="panel green"><h2>Próximas duas semanas</h2><ul>
+        <li>Rodar o cruzamento das 246 com volumetria; alinhar com a operação antes de publicar</li>
+        <li>Congelar escrita no painel e criar o snapshot no Databricks</li>
+        <li>Levar a Product Ops a regra do alerta de anomalia (queda de 50%) e combinar o handover</li>
+        <li>Fechar o vocabulário de Etapa com produto</li>
+        <li>Auditar catálogo e Purchases existentes</li>
+      </ul></div>
+      <div class="panel"><h2>Até o fim do primeiro mês</h2><ul>
+        <li>Padrão de nomenclatura e PR gate em vigor</li>
+        <li>Modelos apontando para o snapshot e sem a coluna "ativa"</li>
+        <li>Especificação do piloto consignado: telas, eventos, produto micro, expiração</li>
+      </ul></div>
+      <div class="panel"><h2>Até o fim do trimestre</h2><ul>
+        <li>Piloto consignado ponta a ponta (sitemap → Warehouse → segmento → feature)</li>
+        <li>~22 segmentos migrados; segmentos sobre actions mortas corrigidos</li>
+        <li>Segmentos de abandono das jornadas sem eventos de item reconstruídos por Etapa</li>
+      </ul></div>
+      <div class="panel amber"><p><strong>Fora do plano:</strong> o Hub de Eventos do CRM é conduzido por outra squad, sem visibilidade de escopo ou prazo. Nada aqui depende dele. Se houver integração, a taxonomia e a modelagem de item são o insumo que a squad entrega.</p></div>
+    </div>
+  </div>
+  <div class="foot"><div class="dec">Tudo o que está aqui foi filtrado por uma pergunta: sobrevive à migração? Taxonomia, catálogo, governança sim. Painel e limpeza cosmética da UI atual, não.</div><div class="pg">13 / 13</div></div>
+</section>
+
+</div></div>
+
+<div class="hint">← → navegam · Home / End · 1 e 2 pulam para as partes</div>
+<div class="nav" aria-label="Navegação">
+  <button type="button" id="prev">← anterior</button>
+  <button type="button" id="next">próximo →</button>
+</div>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide')),i=0;
+  function show(n){i=(n+slides.length)%slides.length;slides.forEach(function(s,k){s.classList.toggle('active',k===i)});}
+  function fit(){var d=document.getElementById('deck'),s=Math.min(innerWidth/1280,innerHeight/720);d.style.transform='scale('+s+')';}
+  document.getElementById('prev').onclick=function(){show(i-1)};
+  document.getElementById('next').onclick=function(){show(i+1)};
+  addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();show(i+1)}
+    if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();show(i-1)}
+    if(e.key==='Home'){show(0)} if(e.key==='End'){show(slides.length-1)}
+    if(e.key==='1'){show(0)} if(e.key==='2'){show(2)}
+  });
+  addEventListener('resize',fit);fit();
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Novo App Inbox — Custom Activity para o Salesforce Marketing Cloud
 
-Custom Activity do Journey Builder que envia uma **mensagem de inbox no app do cliente** (título + mensagem) para cada contato que passa pela etapa da jornada. Projetada para grande escala: API desacoplada por fila de mensagens e worker com autoscaling.
+Custom Activity do Journey Builder que envia uma **mensagem de inbox no app do cliente** (classificação, título, mensagem, ícone ou imagem, CTA, deeplink e período de exibição) para cada contato que passa pela etapa da jornada. Projetada para grande escala: API desacoplada por fila de mensagens e worker com autoscaling.
 
 Este repositório contém **três implementações equivalentes** do backend — escolha uma:
 
@@ -11,6 +11,22 @@ Este repositório contém **três implementações equivalentes** do backend —
 | [`aws/`](aws/) | Java 21 · AWS Lambda + API Gateway + SQS FIFO (serverless) | [aws/README.md](aws/README.md) — variante 100% serverless na AWS |
 
 As três versões implementam exatamente o mesmo contrato (`config.json`, endpoints, UI de configuração, fila com deduplicação, worker). `node/` e `java/` **compartilham a mesma infraestrutura Azure** — o `deploy-azure.sh` de cada pasta publica a respectiva imagem nos mesmos Container Apps (`activity-api` / `activity-worker`). A `aws/` é autônoma: provisiona sua própria stack serverless via `deploy-aws.sh`.
+
+## Campos da activity
+
+Configurados pelo usuário no Journey Builder (`index.html` / `customActivity.js`):
+
+| Campo | Tipo | Obrigatório |
+|---|---|---|
+| `classificacao` | `Padrão` ou `Ação Pendente` | sim |
+| `title` / `message` | texto | sim |
+| `midiaTipo` | `icone` ou `imagem` | sim |
+| `icone` | nome do ícone (lista `ICONS` no `customActivity.js`) | se `midiaTipo=icone` |
+| `imagemUrl` | URL | se `midiaTipo=imagem` |
+| `cta` / `deepLink` | texto | não |
+| `dataInicio` / `dataFim` | `datetime-local` (sem fuso) | não |
+
+Enviados sem aparecer para o usuário: `contactKey`, `journeyId`, `journeyName`, `tipoNotificacao` (= `Novidade`) vão nos `inArguments`; `requestId` (UUID), `eventDate` (instante do execute) e `activityId` são gerados pela API no payload do worker. Os campos são os mesmos nas variantes `java/` (Azure) e `aws/`; a `node/` ainda tem só título e mensagem.
 
 ## Arquitetura (comum às três)
 

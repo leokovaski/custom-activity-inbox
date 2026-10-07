@@ -28,7 +28,8 @@ h1 { font-size: 18px; margin-bottom: 4px; }
   margin-bottom: 6px;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #dddbda;
@@ -36,7 +37,8 @@ h1 { font-size: 18px; margin-bottom: 4px; }
   font-size: 14px;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: #1589ee;
   box-shadow: 0 0 3px #1589ee;
@@ -78,3 +80,8 @@ code {
   border-radius: 3px;
   font-size: 12px;
 }
+
+.hidden { display: none; }
+
+.row { display: flex; gap: 12px; }
+.row .form-group { flex: 1; }

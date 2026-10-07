@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Endpoints chamados pelo Journey Builder.
@@ -47,19 +48,18 @@ public class JourneyController {
   public ResponseEntity<Map<String, Object>> execute(@RequestBody String rawJwt) {
     try {
       Map<String, Object> payload = jwt.verify(rawJwt);
+      // ponytail: payload tem PII (contactKey, e-mail). Só ligar DEBUG pra inspecionar e desligar depois.
+      log.debug("[EXECUTE] payload={}", payload);
       Map<String, Object> inArgs = flattenInArguments(payload);
 
-      Map<String, Object> job = new HashMap<>();
-      job.put("contactKey", inArgs.get("contactKey"));
-      job.put("title", inArgs.get("title"));
-      job.put("message", inArgs.get("message"));
-      job.put("inArguments", inArgs);
-      job.put("journeyId", inArgs.getOrDefault("journeyId", payload.get("journeyId")));
-      job.put("journeyName", inArgs.get("journeyName"));
+      // Payload do worker: todos os inArguments (visíveis + ocultos) + campos gerados aqui
+      Map<String, Object> job = new HashMap<>(inArgs);
+      job.put("requestId", UUID.randomUUID().toString());
+      job.put("eventDate", Instant.now().toString());
       job.put("activityId", payload.get("activityId"));
       job.put("activityInstanceId", payload.get("activityInstanceId"));
       job.put("definitionInstanceId", payload.get("definitionInstanceId"));
-      job.put("receivedAt", Instant.now().toString());
+      job.putIfAbsent("journeyId", payload.get("journeyId"));
 
       if (queue.isEnabled()) {
         // ---------- MODO FILA (produção / grande escala) ----------

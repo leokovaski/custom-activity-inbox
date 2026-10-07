@@ -75,6 +75,7 @@ public class QueueWorker implements ApplicationRunner {
       String currentName = sfmc.lookupJourneyName((String) job.get("journeyId"));
       String journeyName = currentName != null ? currentName : (String) job.get("journeyName");
 
+      log.debug("[WORKER] job={}", job);  // ponytail: PII — só com LOGGING_LEVEL_COM_INBOX_ACTIVITY=DEBUG
       log.info("[WORKER] contactKey={} title=\"{}\" journey=\"{}\" ({})",
           job.get("contactKey"), job.get("title"), journeyName, job.get("journeyId"));
 

@@ -18,6 +18,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Lambda da API — recebe TODAS as rotas do API Gateway (HTTP API, $default):
@@ -92,19 +93,20 @@ public class ApiHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGate
   // ---------------------------------------------------------------------------
   private APIGatewayV2HTTPResponse execute(String rawJwt) throws Exception {
     Map<String, Object> payload = jwt.verify(rawJwt);
+    // ponytail: payload tem PII (contactKey, e-mail). Ligar DEBUG_PAYLOAD=true só pra inspecionar.
+    if ("true".equalsIgnoreCase(env("DEBUG_PAYLOAD", "false"))) {
+      System.out.println("[EXECUTE] payload=" + MAPPER.writeValueAsString(payload));
+    }
     Map<String, Object> inArgs = flattenInArguments(payload);
 
-    Map<String, Object> job = new HashMap<>();
-    job.put("contactKey", inArgs.get("contactKey"));
-    job.put("title", inArgs.get("title"));
-    job.put("message", inArgs.get("message"));
-    job.put("inArguments", inArgs);
-    job.put("journeyId", inArgs.getOrDefault("journeyId", payload.get("journeyId")));
-    job.put("journeyName", inArgs.get("journeyName"));
+    // Payload do worker: todos os inArguments (visíveis + ocultos) + campos gerados aqui
+    Map<String, Object> job = new HashMap<>(inArgs);
+    job.put("requestId", UUID.randomUUID().toString());
+    job.put("eventDate", Instant.now().toString());
     job.put("activityId", payload.get("activityId"));
     job.put("activityInstanceId", payload.get("activityInstanceId"));
     job.put("definitionInstanceId", payload.get("definitionInstanceId"));
-    job.put("receivedAt", Instant.now().toString());
+    job.putIfAbsent("journeyId", payload.get("journeyId"));
 
     if (sqs != null) {
       // ---------- MODO FILA (produção) ----------

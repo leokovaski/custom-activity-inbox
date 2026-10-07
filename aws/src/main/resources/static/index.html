@@ -12,6 +12,14 @@
     <p class="subtitle">Envie uma mensagem de inbox no app para os contatos desta jornada.</p>
 
     <div class="form-group">
+      <label for="classificacao">Classificação <span class="required">*</span></label>
+      <select id="classificacao">
+        <option value="Padrão">Padrão</option>
+        <option value="Ação Pendente">Ação Pendente</option>
+      </select>
+    </div>
+
+    <div class="form-group">
       <label for="title">Título <span class="required">*</span></label>
       <input type="text" id="title" maxlength="100" placeholder="Ex.: Você tem uma novidade!" />
     </div>
@@ -21,6 +29,45 @@
       <textarea id="message" rows="4" maxlength="500" placeholder="Escreva a mensagem que o cliente verá no inbox do app"></textarea>
     </div>
 
+    <div class="form-group">
+      <label for="midiaTipo">Imagem ou ícone <span class="required">*</span></label>
+      <select id="midiaTipo">
+        <option value="icone">Ícone</option>
+        <option value="imagem">Imagem</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="grupoIcone">
+      <label for="icone">Ícone <span class="required">*</span></label>
+      <select id="icone"></select>
+    </div>
+
+    <div class="form-group hidden" id="grupoImagem">
+      <label for="imagemUrl">URL da imagem <span class="required">*</span></label>
+      <input type="url" id="imagemUrl" placeholder="https://..." />
+    </div>
+
+    <div class="form-group">
+      <label for="cta">CTA (texto do botão)</label>
+      <input type="text" id="cta" maxlength="40" placeholder="Ex.: Ver agora" />
+    </div>
+
+    <div class="form-group">
+      <label for="deepLink">DeepLink</label>
+      <input type="text" id="deepLink" placeholder="Ex.: app://inbox/oferta/123" />
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="dataInicio">Data inicial da mensagem</label>
+        <input type="datetime-local" id="dataInicio" />
+      </div>
+      <div class="form-group">
+        <label for="dataFim">Data final da mensagem</label>
+        <input type="datetime-local" id="dataFim" />
+      </div>
+    </div>
+
     <div class="info-box">
       <strong>Jornada atual:</strong> <span id="journeyName">carregando…</span>
     </div>
@@ -28,9 +75,8 @@
     <div class="info-box">
       <strong>Dados enviados automaticamente:</strong>
       <ul>
-        <li><code>contactKey</code> — chave do contato na jornada</li>
-        <li><code>emailAddress</code> — e-mail padrão da jornada</li>
-        <li><code>journeyName</code> / <code>journeyId</code> — jornada em que o contato está</li>
+        <li><code>contactKey</code>, <code>journeyName</code>, <code>journeyId</code>, <code>activityId</code></li>
+        <li><code>requestId</code>, <code>eventDate</code>, <code>tipoNotificacao</code> = Novidade</li>
       </ul>
     </div>
   </div>

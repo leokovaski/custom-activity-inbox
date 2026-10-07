@@ -41,7 +41,11 @@ public class WorkerHandler implements RequestHandler<SQSEvent, SQSBatchResponse>
     return new SQSBatchResponse(failures);
   }
 
-  private void processJob(Map<String, Object> job) {
+  private void processJob(Map<String, Object> job) throws Exception {
+    // ponytail: job tem PII. Ligar DEBUG_PAYLOAD=true no worker só pra inspecionar.
+    if ("true".equalsIgnoreCase(System.getenv("DEBUG_PAYLOAD"))) {
+      System.out.println("[WORKER] job=" + MAPPER.writeValueAsString(job));
+    }
     // Nome atual da jornada (com cache) — à prova de renomeação
     String currentName = sfmc.lookupJourneyName((String) job.get("journeyId"));
     String journeyName = currentName != null ? currentName : (String) job.get("journeyName");

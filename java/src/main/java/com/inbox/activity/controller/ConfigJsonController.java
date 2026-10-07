@@ -23,6 +23,10 @@ public class ConfigJsonController {
     this.props = props;
   }
 
+  private static Map<String, Object> field(String name, boolean nullable) {
+    return Map.of(name, Map.of("dataType", "Text", "isNullable", nullable, "direction", "in"));
+  }
+
   @GetMapping(value = "/config.json", produces = MediaType.APPLICATION_JSON_VALUE)
   public Map<String, Object> configJson() {
     String base = props.getBaseUrl();
@@ -38,11 +42,19 @@ public class ConfigJsonController {
     Map<String, Object> execute = Map.of(
         "inArguments", List.of(
             Map.of("contactKey", "{{Contact.Key}}"),
-            Map.of("emailAddress", "{{InteractionDefaults.Email}}"),
+            Map.of("classificacao", "Padrão"),
             Map.of("title", ""),
             Map.of("message", ""),
+            Map.of("midiaTipo", "icone"),
+            Map.of("icone", ""),
+            Map.of("imagemUrl", ""),
+            Map.of("cta", ""),
+            Map.of("deepLink", ""),
+            Map.of("dataInicio", ""),
+            Map.of("dataFim", ""),
             Map.of("journeyName", ""),
-            Map.of("journeyId", "")),
+            Map.of("journeyId", ""),
+            Map.of("tipoNotificacao", "Novidade")),
         "outArguments", List.of(),
         "url", base + "/journey/execute",
         "verb", "POST",
@@ -62,12 +74,13 @@ public class ConfigJsonController {
         "arguments", Map.of(
             "execute", Map.of(
                 "inArguments", List.of(
-                    Map.of("contactKey", Map.of("dataType", "Text", "isNullable", false, "direction", "in")),
-                    Map.of("emailAddress", Map.of("dataType", "Email", "isNullable", true, "direction", "in")),
-                    Map.of("title", Map.of("dataType", "Text", "isNullable", false, "direction", "in")),
-                    Map.of("message", Map.of("dataType", "Text", "isNullable", false, "direction", "in")),
-                    Map.of("journeyName", Map.of("dataType", "Text", "isNullable", true, "direction", "in")),
-                    Map.of("journeyId", Map.of("dataType", "Text", "isNullable", true, "direction", "in"))),
+                    field("contactKey", false), field("classificacao", false),
+                    field("title", false), field("message", false),
+                    field("midiaTipo", false), field("icone", true), field("imagemUrl", true),
+                    field("cta", true), field("deepLink", true),
+                    field("dataInicio", true), field("dataFim", true),
+                    field("journeyName", true), field("journeyId", true),
+                    field("tipoNotificacao", false)),
                 "outArguments", List.of())));
 
     return Map.of(
@@ -80,7 +93,7 @@ public class ConfigJsonController {
         "arguments", Map.of("execute", execute),
         "configurationArguments", configurationArguments,
         "userInterfaces", Map.of(
-            "configModal", Map.of("height", 480, "width", 640, "fullscreen", false)),
+            "configModal", Map.of("height", 720, "width", 640, "fullscreen", false)),
         "schema", schemaInArguments);
   }
 
